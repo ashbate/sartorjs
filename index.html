@@ -126,6 +126,7 @@
         }).flat();
 
         const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
+        const trailPath = [];
 
         let pointIndex = 0;
         const totalPoints = path.length;
@@ -144,27 +145,26 @@
           dot.attr("cx", x1).attr("cy", y1);
 
           // Create trailing effect that seamlessly fades away gradually
-          const trail = svg.append("line")
+          trailPath.push({ x1, y1, x2, y2 });
+
+          const trails = svg.selectAll(".trail")
+            .data(trailPath)
+            .join("line")
             .attr("class", "trail")
-            .attr("x1", x1)
-            .attr("y1", y1)
-            .attr("x2", x1)
-            .attr("y2", y1)
+            .attr("x1", d => d.x1)
+            .attr("y1", d => d.y1)
+            .attr("x2", d => d.x2)
+            .attr("y2", d => d.y2)
             .attr("stroke", "#ff5733")
             .attr("stroke-width", 8)
-            .attr("stroke-opacity", 0.8)
+            .attr("stroke-opacity", 0.5)
             .transition()
-            .duration(500)
-            .attr("x2", x2)
-            .attr("y2", y2)
-            .transition()
-            .duration(2000)
-            .ease(d3.easeLinear)
+            .duration(3000)
             .attr("stroke-opacity", 0) // Gradual fade effect
             .remove();
 
           dot.transition()
-            .duration(500) // Smoother movement for a continuous effect
+            .duration(1000) // Smoother movement for a continuous effect
             .ease(d3.easeLinear) // Ensure the dot moves smoothly without stopping at corners
             .attr("cx", x2)
             .attr("cy", y2)
