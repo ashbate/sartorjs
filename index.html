@@ -26,7 +26,6 @@
     line {
       stroke: #aaa;
       stroke-width: 6px;
-      stroke-dasharray: 6, 4; /* Dashed road-like style */
     }
 
     .trace {
@@ -54,6 +53,7 @@
       { id: "Logo4", x: 850, y: 400 },
     ];
 
+    // Path with waypoints for rectangular route
     const links = [
       { source: "Logo1", target: "Middle" },
       { source: "Logo2", target: "Middle" },
@@ -64,13 +64,23 @@
     const svg = d3.select("svg");
 
     // Draw links
-    const link = svg.selectAll("line")
+    const link = svg.selectAll("path")
       .data(links)
-      .join("line")
-      .attr("x1", d => nodes.find(n => n.id === d.source).x)
-      .attr("y1", d => nodes.find(n => n.id === d.source).y)
-      .attr("x2", d => nodes.find(n => n.id === d.target).x)
-      .attr("y2", d => nodes.find(n => n.id === d.target).y);
+      .join("path")
+      .attr("d", d => {
+        const source = nodes.find(n => n.id === d.source);
+        const target = nodes.find(n => n.id === d.target);
+        // Create a rectangular path by having waypoints to make the connection more "road-like"
+        const midX = (source.x + target.x) / 2;
+        return `M${source.x},${source.y} 
+                L${midX},${source.y} 
+                L${midX},${target.y} 
+                L${target.x},${target.y}`;
+      })
+      .attr("fill", "none")
+      .attr("stroke", "#aaa")
+      .attr("stroke-width", 6)
+      .attr("stroke-linejoin", "round");
 
     // Draw nodes
     svg.selectAll("circle")
@@ -112,7 +122,7 @@
         if (segment >= totalSegments) {
           dot.remove();
           trace.remove();
-          animateDot(); // Start the animation again
+          setTimeout(animateDot, 1000); // Start the animation again after a delay
           return;
         }
 
@@ -126,7 +136,7 @@
         dot.attr("cx", x1).attr("cy", y1);
 
         dot.transition()
-          .duration(3000) // Slow down the movement
+          .duration(4000) // Slower movement for visibility
           .attrTween("cx", () => d3.interpolate(x1, x2))
           .attrTween("cy", () => d3.interpolate(y1, y2))
           .on("end", () => {
