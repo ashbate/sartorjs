@@ -5,7 +5,6 @@
   <title>Graph Network</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    /* Set a transparent background */
     body {
       margin: 0;
       padding: 0;
@@ -26,18 +25,20 @@
 
     line {
       stroke: #aaa;
-      stroke-width: 2px;
+      stroke-width: 6px;
+      stroke-dasharray: 6, 4; /* Dashed road-like style */
     }
 
-    text {
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      fill: #333;
+    .trace {
+      fill: none;
+      stroke: #ff5733;
+      stroke-width: 3px;
+      stroke-linecap: round;
     }
 
     .dot {
       fill: #ff5733;
-      r: 5;
+      r: 8;
     }
   </style>
 </head>
@@ -65,10 +66,14 @@
     // Draw links
     const link = svg.selectAll("line")
       .data(links)
-      .join("line");
+      .join("line")
+      .attr("x1", d => nodes.find(n => n.id === d.source).x)
+      .attr("y1", d => nodes.find(n => n.id === d.source).y)
+      .attr("x2", d => nodes.find(n => n.id === d.target).x)
+      .attr("y2", d => nodes.find(n => n.id === d.target).y);
 
     // Draw nodes
-    const node = svg.selectAll("circle")
+    svg.selectAll("circle")
       .data(nodes)
       .join("circle")
       .attr("cx", d => d.x)
@@ -85,7 +90,7 @@
       .attr("text-anchor", "middle")
       .text(d => d.id);
 
-    // Dot animation function
+    // Animate dot with trace
     function animateDot() {
       const path = links.map(d => ({
         x1: nodes.find(n => n.id === d.source).x,
@@ -94,21 +99,34 @@
         y2: nodes.find(n => n.id === d.target).y,
       }));
 
+      const trace = svg.append("path")
+        .attr("class", "trace")
+        .attr("d", ""); // Empty initially
+
       const dot = svg.append("circle").attr("class", "dot");
 
       let segment = 0;
+      const totalSegments = path.length;
 
       function moveDot() {
-        if (segment >= path.length) {
+        if (segment >= totalSegments) {
           dot.remove();
+          trace.remove();
+          animateDot(); // Start the animation again
           return;
         }
 
         const { x1, y1, x2, y2 } = path[segment];
+
+        // Update trace path
+        const currentPath = trace.attr("d");
+        const newPathSegment = `M${x1},${y1} L${x2},${y2}`;
+        trace.attr("d", currentPath ? `${currentPath} ${newPathSegment}` : newPathSegment);
+
         dot.attr("cx", x1).attr("cy", y1);
 
         dot.transition()
-          .duration(1000)
+          .duration(3000) // Slow down the movement
           .attrTween("cx", () => d3.interpolate(x1, x2))
           .attrTween("cy", () => d3.interpolate(y1, y2))
           .on("end", () => {
@@ -120,9 +138,8 @@
       moveDot();
     }
 
-    // Start animation every 3 seconds
-    setInterval(animateDot, 3000);
-
+    // Start the animation
+    animateDot();
   </script>
 </body>
 </html>
