@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Graph Network</title>
+  <title>Graph Network Visualization</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: transparent;
-      overflow: hidden;
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
     }
 
     svg {
@@ -17,18 +17,31 @@
       height: 100vh;
     }
 
-    circle {
+    .node {
       fill: #69b3a2;
       stroke: #333;
       stroke-width: 1.5px;
+      transition: all 0.3s ease;
     }
 
-    line {
+    .node:hover {
+      fill: #4a8f7c;
+      stroke-width: 3px;
+      cursor: pointer;
+    }
+
+    .link {
       stroke: #aaa;
+      stroke-width: 4px;
+      stroke-linecap: round;
+      transition: stroke-width 0.3s ease;
+    }
+
+    .link:hover {
       stroke-width: 6px;
     }
 
-    .dot {
+    .animated-dot {
       fill: #ff5733;
       r: 8;
     }
@@ -45,143 +58,164 @@
   <svg></svg>
 
   <script>
-    const nodes = [
-      { id: "Logo1", x: 150, y: 300 },
-      { id: "Logo2", x: 150, y: 400 },
-      { id: "Middle", x: 500, y: 350 },
-      { id: "Logo3", x: 850, y: 300 },
-      { id: "Logo4", x: 850, y: 400 },
-    ];
-
-    // Path segments for the defined journey
-    const journeys = [
-      [
-        { source: "Logo1", target: "Middle" },
-        { source: "Middle", target: "Logo3" }
+    // Configuration object for easy customization
+    const config = {
+      nodes: [
+        { id: "Start1", x: 150, y: 300 },
+        { id: "Start2", x: 150, y: 400 },
+        { id: "Center", x: 500, y: 350 },
+        { id: "End1", x: 850, y: 300 },
+        { id: "End2", x: 850, y: 400 },
       ],
-      [
-        { source: "Logo2", target: "Middle" },
-        { source: "Middle", target: "Logo4" }
-      ]
-    ];
+      journeys: [
+        [
+          { source: "Start1", target: "Center" },
+          { source: "Center", target: "End1" }
+        ],
+        [
+          { source: "Start2", target: "Center" },
+          { source: "Center", target: "End2" }
+        ]
+      ],
+      colors: {
+        centerNode: "#FFD700",
+        regularNode: "#69b3a2",
+        link: "#aaa",
+        dot: "#ff5733",
+        trail: "#ff5733"
+      },
+      animationDuration: 1000,
+      trailFadeDuration: 3000
+    };
 
-    const svg = d3.select("svg");
+    function createGraphNetwork(svg, config) {
+      const { nodes, journeys, colors } = config;
 
-    // Draw links
-    const link = svg.selectAll("path")
-      .data(journeys.flat())
-      .join("path")
-      .attr("d", d => {
-        const source = nodes.find(n => n.id === d.source);
-        const target = nodes.find(n => n.id === d.target);
-        const midX = (source.x + target.x) / 2;
-        return `M${source.x},${source.y} 
-                L${midX},${source.y} 
-                L${midX},${target.y} 
-                L${target.x},${target.y}`;
-      })
-      .attr("fill", "none")
-      .attr("stroke", "#aaa")
-      .attr("stroke-width", 6)
-      .attr("stroke-linejoin", "round");
-
-    // Draw nodes
-    svg.selectAll("circle")
-      .data(nodes)
-      .join("circle")
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y)
-      .attr("r", 20)
-      .attr("fill", (d, i) => i === 2 ? "#FFD700" : "#69b3a2");
-
-    // Add text labels
-    svg.selectAll("text")
-      .data(nodes)
-      .join("text")
-      .attr("x", d => d.x)
-      .attr("y", d => d.y - 30)
-      .attr("text-anchor", "middle")
-      .text(d => d.id);
-
-    // Animate dot with continuous trailing effect
-    function animateDot() {
-      let journeyIndex = 0;
-
-      function startJourney() {
-        if (journeyIndex >= journeys.length) {
-          journeyIndex = 0; // Restart from the first journey
-        }
-
-        const journey = journeys[journeyIndex];
-        const path = journey.map(d => {
+      // Draw links (paths)
+      const linkPaths = svg.selectAll(".link")
+        .data(journeys.flat())
+        .join("path")
+        .attr("class", "link")
+        .attr("d", d => {
           const source = nodes.find(n => n.id === d.source);
           const target = nodes.find(n => n.id === d.target);
           const midX = (source.x + target.x) / 2;
-          return [
-            { x: source.x, y: source.y },
-            { x: midX, y: source.y },
-            { x: midX, y: target.y },
-            { x: target.x, y: target.y }
-          ];
-        }).flat();
+          return `M${source.x},${source.y} 
+                  L${midX},${source.y} 
+                  L${midX},${target.y} 
+                  L${target.x},${target.y}`;
+        })
+        .attr("fill", "none")
+        .attr("stroke", colors.link)
+        .attr("stroke-width", 6)
+        .attr("stroke-linejoin", "round");
 
-        const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
-        const trailPath = [];
+      // Draw nodes
+      const nodeCircles = svg.selectAll(".node")
+        .data(nodes)
+        .join("circle")
+        .attr("class", "node")
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y)
+        .attr("r", 20)
+        .attr("fill", (d, i) => i === 2 ? colors.centerNode : colors.regularNode);
 
-        let pointIndex = 0;
-        const totalPoints = path.length;
+      // Add text labels
+      const nodeLabels = svg.selectAll(".node-label")
+        .data(nodes)
+        .join("text")
+        .attr("class", "node-label")
+        .attr("x", d => d.x)
+        .attr("y", d => d.y - 30)
+        .attr("text-anchor", "middle")
+        .text(d => d.id);
 
-        function moveDot() {
-          if (pointIndex >= totalPoints - 1) {
-            dot.remove();
-            journeyIndex++;
-            setTimeout(startJourney, 1000); // Start the next journey after a delay
-            return;
+      // Animate dot with continuous trailing effect
+      function animateDot() {
+        let journeyIndex = 0;
+
+        function startJourney() {
+          if (journeyIndex >= journeys.length) {
+            journeyIndex = 0;
           }
 
-          const { x: x1, y: y1 } = path[pointIndex];
-          const { x: x2, y: y2 } = path[pointIndex + 1];
+          const journey = journeys[journeyIndex];
+          const path = journey.map(d => {
+            const source = nodes.find(n => n.id === d.source);
+            const target = nodes.find(n => n.id === d.target);
+            const midX = (source.x + target.x) / 2;
+            return [
+              { x: source.x, y: source.y },
+              { x: midX, y: source.y },
+              { x: midX, y: target.y },
+              { x: target.x, y: target.y }
+            ];
+          }).flat();
 
-          dot.attr("cx", x1).attr("cy", y1);
+          const dot = svg.append("circle")
+            .attr("class", "animated-dot")
+            .attr("r", 8)
+            .attr("fill", colors.dot);
 
-          // Create trailing effect that seamlessly fades away gradually
-          trailPath.push({ x1, y1, x2, y2 });
+          const trailPath = [];
+          let pointIndex = 0;
+          const totalPoints = path.length;
 
-          const trails = svg.selectAll(".trail")
-            .data(trailPath)
-            .join("line")
-            .attr("class", "trail")
-            .attr("x1", d => d.x1)
-            .attr("y1", d => d.y1)
-            .attr("x2", d => d.x2)
-            .attr("y2", d => d.y2)
-            .attr("stroke", "#ff5733")
-            .attr("stroke-width", 8)
-            .attr("stroke-opacity", 0.5)
-            .transition()
-            .duration(3000)
-            .attr("stroke-opacity", 0) // Gradual fade effect
-            .remove();
+          function moveDot() {
+            if (pointIndex >= totalPoints - 1) {
+              dot.remove();
+              journeyIndex++;
+              setTimeout(startJourney, 1000);
+              return;
+            }
 
-          dot.transition()
-            .duration(1000) // Smoother movement for a continuous effect
-            .ease(d3.easeLinear) // Ensure the dot moves smoothly without stopping at corners
-            .attr("cx", x2)
-            .attr("cy", y2)
-            .on("end", () => {
-              pointIndex++;
-              moveDot();
-            });
+            const { x: x1, y: y1 } = path[pointIndex];
+            const { x: x2, y: y2 } = path[pointIndex + 1];
+
+            dot.attr("cx", x1).attr("cy", y1);
+
+            trailPath.push({ x1, y1, x2, y2 });
+
+            const trails = svg.selectAll(".trail")
+              .data(trailPath)
+              .join("line")
+              .attr("class", "trail")
+              .attr("x1", d => d.x1)
+              .attr("y1", d => d.y1)
+              .attr("x2", d => d.x2)
+              .attr("y2", d => d.y2)
+              .attr("stroke", colors.trail)
+              .attr("stroke-width", 8)
+              .attr("stroke-opacity", 0.5)
+              .transition()
+              .duration(config.trailFadeDuration)
+              .attr("stroke-opacity", 0)
+              .remove();
+
+            dot.transition()
+              .duration(config.animationDuration)
+              .ease(d3.easeLinear)
+              .attr("cx", x2)
+              .attr("cy", y2)
+              .on("end", () => {
+                pointIndex++;
+                moveDot();
+              });
+          }
+
+          moveDot();
         }
 
-        moveDot();
+        startJourney();
       }
 
-      startJourney();
+      // Start the animation
+      animateDot();
     }
 
-    // Start the animation
-    animateDot();
+    // Initialize the graph network
+    const svg = d3.select("svg");
+    createGraphNetwork(svg, config);
   </script>
 </body>
 </html>
