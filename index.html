@@ -2,34 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Simple Graph Network</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Network</title>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        svg {
+        
+        body, html {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #networkGraph {
             width: 100%;
-            max-width: 1200px;
-            height: 600px;
+            height: 100%;
+            background-color: #f0f0f0;
         }
 
         .node {
             fill: #4a90e2;
             stroke: #2c3e50;
             stroke-width: 2;
-            transition: all 0.3s ease;
-        }
-
-        .node:hover {
-            fill: #3a7bd5;
-            cursor: pointer;
         }
 
         .connection {
@@ -40,7 +36,6 @@
 
         .traveler {
             fill: #e74c3c;
-            transition: all 0.5s linear;
         }
 
         .trail {
@@ -48,7 +43,6 @@
             stroke-width: 4;
             stroke-opacity: 0.5;
             fill: none;
-            transition: opacity 1s ease-out;
         }
     </style>
 </head>
@@ -56,164 +50,193 @@
     <svg id="networkGraph"></svg>
 
     <script>
-    class GraphNetwork {
-        constructor(svgId) {
-            this.svg = document.getElementById(svgId);
-            this.width = 1200;
-            this.height = 600;
-            this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+    document.addEventListener('DOMContentLoaded', () => {
+        class GraphNetwork {
+            constructor(svgId) {
+                this.svg = document.getElementById(svgId);
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                
+                this.svg.setAttribute('width', this.width);
+                this.svg.setAttribute('height', this.height);
+                this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
 
-            // Node configuration
-            this.nodes = [
-                { id: 'Left1', x: this.width * 0.2, y: this.height * 0.3 },
-                { id: 'Left2', x: this.width * 0.2, y: this.height * 0.7 },
-                { id: 'Center', x: this.width * 0.5, y: this.height * 0.5 },
-                { id: 'Right1', x: this.width * 0.8, y: this.height * 0.3 },
-                { id: 'Right2', x: this.width * 0.8, y: this.height * 0.7 }
-            ];
+                // Node configuration
+                this.nodes = [
+                    { id: 'Left1', x: this.width * 0.2, y: this.height * 0.3 },
+                    { id: 'Left2', x: this.width * 0.2, y: this.height * 0.7 },
+                    { id: 'Center', x: this.width * 0.5, y: this.height * 0.5 },
+                    { id: 'Right1', x: this.width * 0.8, y: this.height * 0.3 },
+                    { id: 'Right2', x: this.width * 0.8, y: this.height * 0.7 }
+                ];
 
-            // Journey configurations
-            this.journeys = [
-                { path: ['Left1', 'Center', 'Right1'] },
-                { path: ['Left2', 'Center', 'Right2'] }
-            ];
+                // Journey configurations
+                this.journeys = [
+                    { path: ['Left1', 'Center', 'Right1'] },
+                    { path: ['Left2', 'Center', 'Right2'] }
+                ];
 
-            this.init();
-        }
+                this.init();
+            }
 
-        createNode(node) {
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute('cx', node.x);
-            circle.setAttribute('cy', node.y);
-            circle.setAttribute('r', 20);
-            circle.classList.add('node');
-            return circle;
-        }
+            createNode(node) {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute('cx', node.x);
+                circle.setAttribute('cy', node.y);
+                circle.setAttribute('r', 20);
+                circle.classList.add('node');
+                return circle;
+            }
 
-        createConnection(start, end) {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            const d = `M${start.x},${start.y} 
-                       Q${this.width * 0.5},${this.height * 0.5} 
-                       ${end.x},${end.y}`;
-            path.setAttribute('d', d);
-            path.classList.add('connection');
-            return path;
-        }
+            createConnection(start, end) {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const d = `M${start.x},${start.y} 
+                           Q${this.width * 0.5},${this.height * 0.5} 
+                           ${end.x},${end.y}`;
+                path.setAttribute('d', d);
+                path.classList.add('connection');
+                return path;
+            }
 
-        init() {
-            // Create and add nodes
-            this.nodes.forEach(node => {
-                const nodeElement = this.createNode(node);
-                this.svg.appendChild(nodeElement);
-
-                // Add node labels
-                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                text.setAttribute('x', node.x);
-                text.setAttribute('y', node.y - 30);
-                text.setAttribute('text-anchor', 'middle');
-                text.textContent = node.id;
-                this.svg.appendChild(text);
-            });
-
-            // Create connections
-            this.journeys.forEach(journey => {
-                for (let i = 0; i < journey.path.length - 1; i++) {
-                    const start = this.nodes.find(n => n.id === journey.path[i]);
-                    const end = this.nodes.find(n => n.id === journey.path[i + 1]);
-                    const connection = this.createConnection(start, end);
-                    this.svg.insertBefore(connection, this.svg.firstChild);
+            init() {
+                // Clear any existing elements
+                while (this.svg.firstChild) {
+                    this.svg.removeChild(this.svg.firstChild);
                 }
-            });
 
-            // Start animation
-            this.startAnimation();
-        }
+                // Create and add nodes
+                this.nodes.forEach(node => {
+                    const nodeElement = this.createNode(node);
+                    this.svg.appendChild(nodeElement);
 
-        startAnimation() {
-            this.journeys.forEach((journey, index) => {
-                // Create traveler dot
-                const traveler = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                traveler.setAttribute('r', 8);
-                traveler.classList.add('traveler');
-                this.svg.appendChild(traveler);
+                    // Add node labels
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute('x', node.x);
+                    text.setAttribute('y', node.y - 30);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.textContent = node.id;
+                    this.svg.appendChild(text);
+                });
 
-                // Create trail
-                const trail = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                trail.classList.add('trail');
-                this.svg.insertBefore(trail, this.svg.firstChild);
-
-                // Animate function
-                const animate = () => {
-                    const pathPoints = journey.path.map(id => 
-                        this.nodes.find(node => node.id === id)
-                    );
-
-                    let currentPointIndex = 0;
-                    const trailPoints = [];
-
-                    function moveNext() {
-                        if (currentPointIndex >= pathPoints.length - 1) {
-                            // Reset animation
-                            setTimeout(animate, 1000);
-                            return;
-                        }
-
-                        const start = pathPoints[currentPointIndex];
-                        const end = pathPoints[currentPointIndex + 1];
-
-                        // Create quadratic curve path
-                        const d = `M${start.x},${start.y} 
-                                   Q${this.width * 0.5},${this.height * 0.5} 
-                                   ${end.x},${end.y}`;
-
-                        // Animate traveler
-                        traveler.setAttribute('cx', start.x);
-                        traveler.setAttribute('cy', start.y);
-
-                        // Create trail segment
-                        trailPoints.push({ start, end });
-                        const trailPath = trailPoints.map(point => 
-                            `M${point.start.x},${point.start.y} 
-                             Q${this.width * 0.5},${this.height * 0.5} 
-                             ${point.end.x},${point.end.y}`
-                        ).join(' ');
-                        trail.setAttribute('d', trailPath);
-
-                        // Animate traveler movement
-                        traveler.style.transition = 'all 1.5s linear';
-                        traveler.setAttribute('cx', end.x);
-                        traveler.setAttribute('cy', end.y);
-
-                        // Fade out trail segments
-                        setTimeout(() => {
-                            if (trailPoints.length > 3) {
-                                trailPoints.shift();
-                                const updatedTrailPath = trailPoints.map(point => 
-                                    `M${point.start.x},${point.start.y} 
-                                     Q${this.width * 0.5},${this.height * 0.5} 
-                                     ${point.end.x},${point.end.y}`
-                                ).join(' ');
-                                trail.setAttribute('d', updatedTrailPath);
-                            }
-                        }, 1500);
-
-                        // Move to next point
-                        currentPointIndex++;
-                        setTimeout(moveNext, 2000);
+                // Create connections
+                this.journeys.forEach(journey => {
+                    for (let i = 0; i < journey.path.length - 1; i++) {
+                        const start = this.nodes.find(n => n.id === journey.path[i]);
+                        const end = this.nodes.find(n => n.id === journey.path[i + 1]);
+                        const connection = this.createConnection(start, end);
+                        this.svg.insertBefore(connection, this.svg.firstChild);
                     }
+                });
 
-                    // Start first movement
-                    moveNext();
-                };
+                // Start animation
+                this.startAnimation();
+            }
 
-                // Stagger start of journeys
-                setTimeout(animate, index * 1000);
-            });
+            startAnimation() {
+                this.journeys.forEach((journey, index) => {
+                    // Create traveler dot
+                    const traveler = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    traveler.setAttribute('r', 8);
+                    traveler.classList.add('traveler');
+                    this.svg.appendChild(traveler);
+
+                    // Create trail
+                    const trail = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    trail.classList.add('trail');
+                    this.svg.insertBefore(trail, this.svg.firstChild);
+
+                    // Animate function
+                    const animate = () => {
+                        const pathPoints = journey.path.map(id => 
+                            this.nodes.find(node => node.id === id)
+                        );
+
+                        let currentPointIndex = 0;
+                        const trailPoints = [];
+
+                        const moveNext = () => {
+                            if (currentPointIndex >= pathPoints.length - 1) {
+                                // Reset animation
+                                setTimeout(animate, 1000);
+                                return;
+                            }
+
+                            const start = pathPoints[currentPointIndex];
+                            const end = pathPoints[currentPointIndex + 1];
+
+                            // Animate traveler
+                            traveler.setAttribute('cx', start.x);
+                            traveler.setAttribute('cy', start.y);
+
+                            // Create trail segment
+                            trailPoints.push({ start, end });
+                            const trailPath = trailPoints.map(point => 
+                                `M${point.start.x},${point.start.y} 
+                                 Q${this.width * 0.5},${this.height * 0.5} 
+                                 ${point.end.x},${point.end.y}`
+                            ).join(' ');
+                            trail.setAttribute('d', trailPath);
+
+                            // Animate traveler movement
+                            setTimeout(() => {
+                                traveler.setAttribute('cx', end.x);
+                                traveler.setAttribute('cy', end.y);
+
+                                // Fade out trail segments
+                                if (trailPoints.length > 3) {
+                                    trailPoints.shift();
+                                    const updatedTrailPath = trailPoints.map(point => 
+                                        `M${point.start.x},${point.start.y} 
+                                         Q${this.width * 0.5},${this.height * 0.5} 
+                                         ${point.end.x},${point.end.y}`
+                                    ).join(' ');
+                                    trail.setAttribute('d', updatedTrailPath);
+                                }
+
+                                // Move to next point
+                                currentPointIndex++;
+                                setTimeout(moveNext, 1500);
+                            }, 100);
+                        };
+
+                        // Start first movement
+                        moveNext();
+                    };
+
+                    // Stagger start of journeys
+                    setTimeout(animate, index * 1000);
+                });
+            }
+
+            // Add resize handling
+            handleResize() {
+                window.addEventListener('resize', () => {
+                    this.width = window.innerWidth;
+                    this.height = window.innerHeight;
+                    
+                    this.svg.setAttribute('width', this.width);
+                    this.svg.setAttribute('height', this.height);
+                    this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+
+                    // Recalculate node positions
+                    this.nodes = [
+                        { id: 'Left1', x: this.width * 0.2, y: this.height * 0.3 },
+                        { id: 'Left2', x: this.width * 0.2, y: this.height * 0.7 },
+                        { id: 'Center', x: this.width * 0.5, y: this.height * 0.5 },
+                        { id: 'Right1', x: this.width * 0.8, y: this.height * 0.3 },
+                        { id: 'Right2', x: this.width * 0.8, y: this.height * 0.7 }
+                    ];
+
+                    // Reinitialize the graph
+                    this.init();
+                });
+            }
         }
-    }
 
-    // Initialize the graph network
-    new GraphNetwork('networkGraph');
+        // Initialize the graph network
+        const network = new GraphNetwork('networkGraph');
+        network.handleResize();
+    });
     </script>
 </body>
 </html>
