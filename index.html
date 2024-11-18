@@ -143,7 +143,7 @@
 
           dot.attr("cx", x1).attr("cy", y1);
 
-          // Create trailing effect that seamlessly fades away
+          // Create trailing effect that seamlessly fades away gradually
           const trail = svg.append("line")
             .attr("class", "trail")
             .attr("x1", x1)
@@ -158,8 +158,9 @@
             .attr("x2", x2)
             .attr("y2", y2)
             .transition()
-            .duration(1000)
-            .attr("stroke-opacity", 0) // Continuous fade effect
+            .duration(2000)
+            .ease(d3.easeLinear)
+            .attr("stroke-opacity", 0) // Gradual fade effect
             .remove();
 
           dot.transition()
