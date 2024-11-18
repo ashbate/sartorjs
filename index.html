@@ -33,7 +33,7 @@
       r: 8;
     }
 
-    .trace-line {
+    .trail {
       fill: none;
       stroke: #ff5733;
       stroke-width: 8;
@@ -103,7 +103,7 @@
       .attr("text-anchor", "middle")
       .text(d => d.id);
 
-    // Animate dot with fading trace
+    // Animate dot with trailing effect
     function animateDot() {
       let journeyIndex = 0;
 
@@ -126,7 +126,6 @@
         }).flat();
 
         const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
-        let traceLine = svg.append("path").attr("class", "trace-line").attr("d", "");
 
         let pointIndex = 0;
         const totalPoints = path.length;
@@ -134,7 +133,6 @@
         function moveDot() {
           if (pointIndex >= totalPoints - 1) {
             dot.remove();
-            traceLine.remove();
             journeyIndex++;
             setTimeout(startJourney, 1000); // Start the next journey after a delay
             return;
@@ -143,14 +141,17 @@
           const { x: x1, y: y1 } = path[pointIndex];
           const { x: x2, y: y2 } = path[pointIndex + 1];
 
-          // Update trace line
-          const currentTrace = traceLine.attr("d");
-          const newTraceSegment = `M${x1},${y1} L${x2},${y2}`;
-          traceLine.attr("d", currentTrace ? `${currentTrace} ${newTraceSegment}` : newTraceSegment)
-            .attr("stroke-opacity", 1)
+          // Create trailing effect
+          svg.append("circle")
+            .attr("class", "trail")
+            .attr("cx", x1)
+            .attr("cy", y1)
+            .attr("r", 8)
+            .attr("fill", "#ff5733")
+            .attr("opacity", 1)
             .transition()
             .duration(2000)
-            .attr("stroke-opacity", 0) // Fade out effect for the trace like the Flash
+            .attr("opacity", 0)
             .remove();
 
           dot.attr("cx", x1).attr("cy", y1);
