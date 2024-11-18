@@ -103,7 +103,7 @@
       .attr("text-anchor", "middle")
       .text(d => d.id);
 
-    // Animate dot with trailing effect
+    // Animate dot with continuous trailing effect
     function animateDot() {
       let journeyIndex = 0;
 
@@ -126,6 +126,7 @@
         }).flat();
 
         const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
+        const trailData = [];
 
         let pointIndex = 0;
         const totalPoints = path.length;
@@ -141,23 +142,26 @@
           const { x: x1, y: y1 } = path[pointIndex];
           const { x: x2, y: y2 } = path[pointIndex + 1];
 
-          // Create trailing effect
-          svg.append("circle")
-            .attr("class", "trail")
-            .attr("cx", x1)
-            .attr("cy", y1)
-            .attr("r", 8)
-            .attr("fill", "#ff5733")
-            .attr("opacity", 1)
-            .transition()
-            .duration(2000)
-            .attr("opacity", 0)
-            .remove();
-
           dot.attr("cx", x1).attr("cy", y1);
 
+          // Update trail data to add the current segment
+          trailData.push({ x1, y1, x2, y2 });
+
+          // Draw the trail
+          svg.selectAll(".trail")
+            .data(trailData)
+            .join("line")
+            .attr("class", "trail")
+            .attr("x1", d => d.x1)
+            .attr("y1", d => d.y1)
+            .attr("x2", d => d.x2)
+            .attr("y2", d => d.y2)
+            .attr("stroke", "#ff5733")
+            .attr("stroke-width", 8)
+            .attr("stroke-opacity", 0.5);
+
           dot.transition()
-            .duration(2000) // Slower movement for visibility
+            .duration(1000) // Smoother movement for a continuous effect
             .attr("cx", x2)
             .attr("cy", y2)
             .on("end", () => {
