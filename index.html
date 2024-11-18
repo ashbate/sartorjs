@@ -126,7 +126,6 @@
         }).flat();
 
         const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
-        const trailData = [];
 
         let pointIndex = 0;
         const totalPoints = path.length;
@@ -144,21 +143,22 @@
 
           dot.attr("cx", x1).attr("cy", y1);
 
-          // Update trail data to add the current segment
-          trailData.push({ x1, y1, x2, y2 });
-
-          // Draw the trail
-          svg.selectAll(".trail")
-            .data(trailData)
-            .join("line")
+          // Create trailing effect that fades away
+          const trail = svg.append("line")
             .attr("class", "trail")
-            .attr("x1", d => d.x1)
-            .attr("y1", d => d.y1)
-            .attr("x2", d => d.x2)
-            .attr("y2", d => d.y2)
+            .attr("x1", x1)
+            .attr("y1", y1)
+            .attr("x2", x1)
+            .attr("y2", y1)
             .attr("stroke", "#ff5733")
             .attr("stroke-width", 8)
-            .attr("stroke-opacity", 0.5);
+            .attr("stroke-opacity", 0.8)
+            .transition()
+            .duration(1000)
+            .attr("x2", x2)
+            .attr("y2", y2)
+            .attr("stroke-opacity", 0) // Fade out effect
+            .remove();
 
           dot.transition()
             .duration(1000) // Smoother movement for a continuous effect
