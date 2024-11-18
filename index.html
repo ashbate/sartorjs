@@ -28,13 +28,6 @@
       stroke-width: 6px;
     }
 
-    .trace {
-      fill: none;
-      stroke: #ff5733;
-      stroke-width: 3px;
-      stroke-linecap: round;
-    }
-
     .dot {
       fill: #ff5733;
       r: 8;
@@ -53,24 +46,27 @@
       { id: "Logo4", x: 850, y: 400 },
     ];
 
-    // Path with waypoints for rectangular route
-    const links = [
-      { source: "Logo1", target: "Middle" },
-      { source: "Logo2", target: "Middle" },
-      { source: "Middle", target: "Logo3" },
-      { source: "Middle", target: "Logo4" },
+    // Path segments for the defined journey
+    const journeys = [
+      [
+        { source: "Logo1", target: "Middle" },
+        { source: "Middle", target: "Logo3" }
+      ],
+      [
+        { source: "Logo2", target: "Middle" },
+        { source: "Middle", target: "Logo4" }
+      ]
     ];
 
     const svg = d3.select("svg");
 
     // Draw links
     const link = svg.selectAll("path")
-      .data(links)
+      .data(journeys.flat())
       .join("path")
       .attr("d", d => {
         const source = nodes.find(n => n.id === d.source);
         const target = nodes.find(n => n.id === d.target);
-        // Create a rectangular path by having waypoints to make the connection more "road-like"
         const midX = (source.x + target.x) / 2;
         return `M${source.x},${source.y} 
                 L${midX},${source.y} 
@@ -100,58 +96,72 @@
       .attr("text-anchor", "middle")
       .text(d => d.id);
 
-    // Animate dot with trace
+    // Animate dot with fading trace
     function animateDot() {
-      const path = links.map(d => {
-        const source = nodes.find(n => n.id === d.source);
-        const target = nodes.find(n => n.id === d.target);
-        const midX = (source.x + target.x) / 2;
-        return [
-          { x: source.x, y: source.y },
-          { x: midX, y: source.y },
-          { x: midX, y: target.y },
-          { x: target.x, y: target.y }
-        ];
-      }).flat();
+      let journeyIndex = 0;
 
-      const trace = svg.append("path")
-        .attr("class", "trace")
-        .attr("d", ""); // Empty initially
-
-      const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
-
-      let pointIndex = 0;
-      const totalPoints = path.length;
-
-      function moveDot() {
-        if (pointIndex >= totalPoints - 1) {
-          dot.remove();
-          trace.remove();
-          setTimeout(animateDot, 1000); // Start the animation again after a delay
-          return;
+      function startJourney() {
+        if (journeyIndex >= journeys.length) {
+          journeyIndex = 0; // Restart from the first journey
         }
 
-        const { x: x1, y: y1 } = path[pointIndex];
-        const { x: x2, y: y2 } = path[pointIndex + 1];
+        const journey = journeys[journeyIndex];
+        const path = journey.map(d => {
+          const source = nodes.find(n => n.id === d.source);
+          const target = nodes.find(n => n.id === d.target);
+          const midX = (source.x + target.x) / 2;
+          return [
+            { x: source.x, y: source.y },
+            { x: midX, y: source.y },
+            { x: midX, y: target.y },
+            { x: target.x, y: target.y }
+          ];
+        }).flat();
 
-        // Update trace path
-        const currentPath = trace.attr("d");
-        const newPathSegment = `M${x1},${y1} L${x2},${y2}`;
-        trace.attr("d", currentPath ? `${currentPath} ${newPathSegment}` : newPathSegment);
+        const dot = svg.append("circle").attr("class", "dot").attr("r", 8);
 
-        dot.attr("cx", x1).attr("cy", y1);
+        let pointIndex = 0;
+        const totalPoints = path.length;
 
-        dot.transition()
-          .duration(2000) // Slower movement for visibility
-          .attr("cx", x2)
-          .attr("cy", y2)
-          .on("end", () => {
-            pointIndex++;
-            moveDot();
-          });
+        function moveDot() {
+          if (pointIndex >= totalPoints - 1) {
+            dot.remove();
+            journeyIndex++;
+            setTimeout(startJourney, 1000); // Start the next journey after a delay
+            return;
+          }
+
+          const { x: x1, y: y1 } = path[pointIndex];
+          const { x: x2, y: y2 } = path[pointIndex + 1];
+
+          // Create fading trace
+          svg.append("circle")
+            .attr("cx", x1)
+            .attr("cy", y1)
+            .attr("r", 4)
+            .attr("fill", "#ff5733")
+            .attr("opacity", 1)
+            .transition()
+            .duration(2000)
+            .attr("opacity", 0)
+            .remove();
+
+          dot.attr("cx", x1).attr("cy", y1);
+
+          dot.transition()
+            .duration(2000) // Slower movement for visibility
+            .attr("cx", x2)
+            .attr("cy", y2)
+            .on("end", () => {
+              pointIndex++;
+              moveDot();
+            });
+        }
+
+        moveDot();
       }
 
-      moveDot();
+      startJourney();
     }
 
     // Start the animation
