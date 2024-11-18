@@ -141,8 +141,6 @@
           const { x: x1, y: y1 } = path[pointIndex];
           const { x: x2, y: y2 } = path[pointIndex + 1];
 
-          dot.attr("cx", x1).attr("cy", y1);
-
           // Create trailing effect that fades away continuously
           const trail = svg.append("line")
             .attr("class", "trail")
@@ -162,6 +160,7 @@
 
           dot.transition()
             .duration(1000) // Smoother movement for a continuous effect
+            .ease(d3.easeLinear) // Ensure the dot moves smoothly without stopping at corners
             .attr("cx", x2)
             .attr("cy", y2)
             .on("end", () => {
