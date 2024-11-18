@@ -5,18 +5,39 @@
   <title>Graph Network</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    svg {
-      width: 100%;
-      height: 600px;
-      background-color: #f9f9f9;
+    /* Set a transparent background */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: transparent;
+      overflow: hidden;
     }
+
+    svg {
+      width: 100vw;
+      height: 100vh;
+    }
+
     circle {
       fill: #69b3a2;
       stroke: #333;
       stroke-width: 1.5px;
     }
+
     line {
       stroke: #aaa;
+      stroke-width: 2px;
+    }
+
+    text {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      fill: #333;
+    }
+
+    .dot {
+      fill: #ff5733;
+      r: 5;
     }
   </style>
 </head>
@@ -25,86 +46,83 @@
 
   <script>
     const nodes = [
-      { id: 1, group: "A" },
-      { id: 2, group: "B" },
-      { id: 3, group: "A" },
-      { id: 4, group: "B" },
-      { id: 5, group: "A" },
+      { id: "Logo1", x: 150, y: 300 },
+      { id: "Logo2", x: 150, y: 400 },
+      { id: "Middle", x: 500, y: 350 },
+      { id: "Logo3", x: 850, y: 300 },
+      { id: "Logo4", x: 850, y: 400 },
     ];
 
     const links = [
-      { source: 1, target: 2 },
-      { source: 1, target: 3 },
-      { source: 2, target: 4 },
-      { source: 3, target: 4 },
-      { source: 4, target: 5 },
+      { source: "Logo1", target: "Middle" },
+      { source: "Logo2", target: "Middle" },
+      { source: "Middle", target: "Logo3" },
+      { source: "Middle", target: "Logo4" },
     ];
 
     const svg = d3.select("svg");
-    const width = parseInt(svg.style("width"));
-    const height = parseInt(svg.style("height"));
 
-    const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-
-    const link = svg.append("g")
-      .selectAll("line")
+    // Draw links
+    const link = svg.selectAll("line")
       .data(links)
       .join("line");
 
-    const node = svg.append("g")
-      .selectAll("circle")
+    // Draw nodes
+    const node = svg.selectAll("circle")
       .data(nodes)
       .join("circle")
-      .attr("r", 10)
-      .call(drag(simulation));
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y)
+      .attr("r", 20)
+      .attr("fill", (d, i) => i === 2 ? "#FFD700" : "#69b3a2");
 
-    const label = svg.append("g")
-      .selectAll("text")
+    // Add text labels
+    svg.selectAll("text")
       .data(nodes)
       .join("text")
-      .attr("dy", 3)
-      .attr("x", 15)
-      .text(d => `Node ${d.id}`);
+      .attr("x", d => d.x)
+      .attr("y", d => d.y - 30)
+      .attr("text-anchor", "middle")
+      .text(d => d.id);
 
-    simulation.on("tick", () => {
-      link
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
+    // Dot animation function
+    function animateDot() {
+      const path = links.map(d => ({
+        x1: nodes.find(n => n.id === d.source).x,
+        y1: nodes.find(n => n.id === d.source).y,
+        x2: nodes.find(n => n.id === d.target).x,
+        y2: nodes.find(n => n.id === d.target).y,
+      }));
 
-      node
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y);
+      const dot = svg.append("circle").attr("class", "dot");
 
-      label
-        .attr("x", d => d.x)
-        .attr("y", d => d.y);
-    });
+      let segment = 0;
 
-    function drag(simulation) {
-      function dragstarted(event) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
+      function moveDot() {
+        if (segment >= path.length) {
+          dot.remove();
+          return;
+        }
+
+        const { x1, y1, x2, y2 } = path[segment];
+        dot.attr("cx", x1).attr("cy", y1);
+
+        dot.transition()
+          .duration(1000)
+          .attrTween("cx", () => d3.interpolate(x1, x2))
+          .attrTween("cy", () => d3.interpolate(y1, y2))
+          .on("end", () => {
+            segment++;
+            moveDot();
+          });
       }
-      function dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-      }
-      function dragended(event) {
-        if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
-      }
-      return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
+
+      moveDot();
     }
+
+    // Start animation every 3 seconds
+    setInterval(animateDot, 3000);
+
   </script>
 </body>
 </html>
